@@ -4,6 +4,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
+
+class CRP;
+
 class Account
 {
 private:
@@ -27,6 +30,8 @@ public:
     inline unsigned int getFriendnum(){return (unsigned int)friendList.size();}
     void loadFriendList(unsigned int friendid); //use this function to load the information of friend list from data file
     inline unsigned int getFriendID(int key){return friendList[key];}
+
+    friend class CRP;
 };
 
 Account::~Account()
