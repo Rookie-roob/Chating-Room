@@ -19,9 +19,11 @@ public:
     //0 register new account; 1 log in; 2 log out; 3 show friend list; 4 connect with friend
     //5 message; 6 file transport
     char* data; 
+    CRP()=default;
     CRP(Account *acc,int type,char* data=NULL);
     ~CRP();
 
+    int pktype(){return this->type;}
     int sendPacket(SOCKET &socket);
     int receivePacket(SOCKET &socket);
 };
