@@ -1,4 +1,4 @@
-//定义了客户端可以使用的请求，以及服务器提供的服务
+//this header defines available service provided by server and available requests clients can use
 
 #ifndef MESSAGEPROC_H
 #define MESSAGEPROC_H
@@ -10,34 +10,38 @@
 #include <Winsock2.h>
 #include <WS2tcpip.h>
 #include "Account.h"
+#include "AccountReg.h"
 #include "CRP.h"
 //#include <Windows.h>
 using namespace std;
 
+namespace mp{
 int sendMessage(SOCKET &socket,Account *acc,string &str); //client
 
-string receiveMessage(); //client
+string receiveMessage(SOCKET &socket); //client
 
-int sendFile(string filename); //client or server
+int sendFile(SOCKET &socket,string filename,Account *acc); //client or server
 
-int saveFile(); //client or server
+int saveFile(SOCKET &socket); //client or server
 
-int signInReq(); //client
-int signInRpy(); //server
+int signInReq(SOCKET &socket,Account &acc); //client
+int signInRpy(SOCKET &socket,AccountReg &accounts); //server
 
 int signOutReq(); //client
 int signOutRpy(); //server
 
-int registerReq(); //client
-int registerRpy(); //server
+unsigned int registerReq(SOCKET &socket,string nickname,unsigned int psw); //client
+Account registerRpy(SOCKET &socket,unsigned int id); //server
 
 int communicateFriendReq(thread *threads); //client
-int communicateFriendRpy(); //server （同时发给两个将要建立连接的主机）
+int communicateFriendRpy(); 
+//server (send to both of the two client hosts which want to connect with each other)
 
 int getFriendsStateReq(); //client
 int getFriendsStateRpy(); //server
 
-int clientReqHandler(thread *threads); //server （每来一个客户端都新建一个，多线程）
+int clientReqHandler(thread *threads); //server （new thread to handle client requests）
 
+}
 
 #endif

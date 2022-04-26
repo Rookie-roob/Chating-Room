@@ -12,29 +12,39 @@ const size_t MAXBUFFERSIZE=1024;
 class CRP //chating room packet
 {    
 private:
-    unsigned int id;
     unsigned int psw;
-    int type; //packet type
 public:
     //0 register new account; 1 log in; 2 log out; 3 show friend list; 4 connect with friend
     //5 message; 6 file transport
+    int type; //packet type
+    unsigned int id;
     char* data; 
     CRP()=default;
     CRP(Account *acc,int type,char* data=NULL);
     ~CRP();
 
-    int pktype(){return this->type;}
+    Account registerAccount(unsigned int id);
     int sendPacket(SOCKET &socket);
     int receivePacket(SOCKET &socket);
 };
 
 CRP::CRP(Account *acc,int type,char* data) :
-    id(acc->id),psw(acc->password),type(type),data(data)
+    id(acc->id),psw(acc->password),type(type)
 {
+    size_t len=strlen(data);
+    this->data=new char[len+1];
+    strcpy(this->data,data);
 }
 
 CRP::~CRP()
 {
+    if(this->data)
+        delete [] this->data;
+}
+
+Account CRP::registerAccount(unsigned int id)
+{
+    return Account(id,this->psw);
 }
 
 int CRP::sendPacket(SOCKET &socket)
