@@ -21,13 +21,17 @@ public:
     int type; //packet type
     unsigned int id;
     char* data; 
+    unsigned long long datalen; // \n is not included
     CRP()=default;
     CRP(Account *acc,int type,char* data=NULL);
+    CRP(Account* acc, int type, char* data, unsigned long long datalen);
     ~CRP();
 
     Account registerAccount(unsigned int id);
     int sendPacket(SOCKET &socket);
     int receivePacket(SOCKET &socket);
 };
+
+int readline(char buffer[MAXBUFFERSIZE]);
 
 #endif

@@ -5,6 +5,7 @@
 #include <Windows.h>
 #include "Account.h"
 #include "AccountReg.h"
+#include "MessageProc.h"
 #pragma comment (lib,"ws2_32.lib")
 using namespace std;
 
@@ -26,12 +27,13 @@ DWORD WINAPI receiveMessage(LPVOID lpvThreadParam)
 {
     while (1)
     {
-        char szBuffer[MAXBYTE] = { 0 };
-        int ret = recv(client, szBuffer, MAXBYTE, NULL);
-        if (ret == SOCKET_ERROR)
-            return 0;
+        // char szBuffer[MAXBYTE] = { 0 };
+        // int ret = recv(client, szBuffer, MAXBYTE, NULL);
+        // if (ret == SOCKET_ERROR)
+        //     return 0;
+        string str=mp::receiveMessage(client);
         cout<<"---------------------client"<<endl;
-        cout<<"                     "<<szBuffer<<endl;
+        cout<<"                     "<<str<<endl;
     }
     return 0;
 }
@@ -42,11 +44,11 @@ int main()
     // newAccount(1,123456,"Ming");
     // newAccount(2,123456,"jackeylove");
     // newAccount(3,123456,"Xiaohu");
-    newFriend(1,3);
-    newFriend(1,2);
-    Account *acc=getAccountInfoByID(1);
-    getAccountInfoByID(2)->changeState();
-    showFriendState(acc);
+    // newFriend(1,3);
+    // newFriend(1,2);
+    // Account *acc=getAccountInfoByID(1);
+    // getAccountInfoByID(2)->changeState();
+    // showFriendState(acc);
     showAllAccount();
 
 	WSADATA wsaData;
@@ -74,15 +76,18 @@ int main()
     }
 	cout << "connect with client successfully" << endl;
 	
-    HANDLE handle = CreateThread(NULL, 0, receiveMessage, NULL, 0, NULL);
+    Account acc(1,123456);
+    /*HANDLE handle = CreateThread(NULL, 0, receiveMessage, NULL, 0, NULL);*/
     while(1)
     {
-        char send_str[100];
-        cin.getline(send_str,100);
-        sendMessage(send_str,strlen(send_str));
+        /* char send_str[100];
+         cin.getline(send_str,100);
+         sendMessage(send_str,strlen(send_str));*/
+
+        mp::saveFile(client);
     }
 
-    CloseHandle(handle);
+    /*CloseHandle(handle);*/
     closesocket(client);
     closesocket(server);
     WSACleanup();
