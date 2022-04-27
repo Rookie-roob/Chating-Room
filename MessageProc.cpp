@@ -176,5 +176,5 @@ int mp::signInReq(SOCKET &socket,Account &acc)
 
 int mp::signInRpy(SOCKET &socket,AccountReg &accounts)
 {
-    
+    return 0;
 }

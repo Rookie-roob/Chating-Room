@@ -1,5 +1,6 @@
 //this header defines available service provided by server and available requests clients can use
 
+
 #ifndef MESSAGEPROC_H
 #define MESSAGEPROC_H
 
@@ -9,10 +10,11 @@
 #include <fstream>
 #include <Winsock2.h>
 #include <WS2tcpip.h>
-#include "Account.h"
-#include "AccountReg.h"
+//#include "Account.h"
+//#include "AccountReg.h"
 #include "CRP.h"
 //#include <Windows.h>
+
 using namespace std;
 
 namespace mp{
