@@ -38,7 +38,6 @@ string mp::receiveMessage(SOCKET &socket)
     packet.receivePacket(socket);
     if (packet.type == 5)
     {
-        packet.data[packet.datalen] = '\0';
         return string(packet.data);
     }
 }
@@ -75,15 +74,21 @@ int mp::sendFile(SOCKET& socket, string filename, Account* acc)
     ptr += sizeof(int);
 
     infile.seekg(0, ios::beg);
-    size_t MAXCONTENTSIZE = MAXBUFFERSIZE - sizeof(int) - 1;
-    while (infile.read(ptr, MAXCONTENTSIZE))
+    size_t MAXCONTENTSIZE = MAXBUFFERSIZE - sizeof(int);
+    while (1)
     {
+        infile.read(ptr, MAXCONTENTSIZE);
         int count = infile.gcount();
-        if (count < MAXCONTENTSIZE)
+        if (count == 0)
+        {
+            infile.close();
+            return 0;
+        }
+        /*if (count < MAXCONTENTSIZE)
         {
             buffer[sizeof(int) + count] = '\n';
         }
-        buffer[MAXBUFFERSIZE - 1] = '\n';
+        buffer[MAXBUFFERSIZE - 1] = '\n';*/
         CRP packet(acc, 6, buffer, sizeof(int) + count);
         if (packet.sendPacket(socket) != 0)
             return 2;
@@ -93,6 +98,8 @@ int mp::sendFile(SOCKET& socket, string filename, Account* acc)
         memset(buffer, 0, MAXBUFFERSIZE);
         memcpy(ptr, &offset, sizeof(int));
         ptr += sizeof(int);
+
+        cout << offset << " bytes have sent,total size: " << totalsize << endl;
     }
     return 0;
 }
@@ -122,6 +129,7 @@ int mp::saveFile(SOCKET &socket)
             char filenameNoPath[100] = { 0 };
             memcpy(filenameNoPath, ptr, packet.datalen - sizeof(int) * 2);
             filename=string(filenameNoPath);
+
             cout << filename << endl;
             ofstream out(filename,ios::out);
             out.close();
@@ -135,6 +143,9 @@ int mp::saveFile(SOCKET &socket)
             int segsize=packet.datalen - sizeof(int);
             file.write(ptr,segsize);
             savedsize+=segsize;
+
+            cout << savedsize << " bytes have saved,total size: " << totalsize << endl;
+            file.close();
         }
     }
     file.close();

@@ -1,18 +1,19 @@
 #include "CRP.h"
 
+//this version is for string transmission only,packet data contains '\0'
 CRP::CRP(Account *acc,int type,char* data) :
     id(acc->id),psw(acc->password),type(type),datalen(0)
 {
-    this->datalen=strlen(data);
-    this->data=new char[this->datalen+1];
+    this->datalen=strlen(data) + 1;
+    this->data=new char[this->datalen];
     strcpy(this->data,data);
 }
 
 CRP::CRP(Account* acc, int type, char* data, unsigned long long datalen) :
     id(acc->id),psw(acc->password),type(type),datalen(datalen)
 {
-    this->data = new char[datalen + 1];
-    memcpy(this->data, data, datalen + 1);
+    this->data = new char[datalen];
+    memcpy(this->data, data, datalen);
 }
 CRP::~CRP()
 {
@@ -29,18 +30,20 @@ int CRP::sendPacket(SOCKET &socket)
 {
     size_t suint=sizeof(unsigned int),
            sint=sizeof(int),
-           sdata=this->datalen + 1; //包括结尾的\n,这将被用于分割不同的报文
-    char *buffer=new char[suint*2+sint+sdata];
+           sdata=this->datalen,
+           slen = sizeof(unsigned long long);
+    size_t packetlen = slen + suint * 2 + sint + sdata;
+
+    char *buffer=new char[packetlen+2];
     char *ptr=buffer;
-    memcpy(ptr,&id,suint);
-    ptr+=suint;
-    memcpy(ptr,&psw,suint);
-    ptr+=suint;
-    memcpy(ptr,&type,sint);
-    ptr+=sint;
-    memcpy(ptr,data,sdata);
-    buffer[suint * 2 + sint + sdata - 1] = '\n';
-    if(send(socket,buffer,suint*2+sint+sdata,0))
+    buffer[0] = '\n';
+    memcpy(++ptr, &packetlen, slen);
+    memcpy(ptr+=slen,&id,suint);
+    memcpy(ptr+=suint,&psw,suint);
+    memcpy(ptr += suint,&type,sint);
+    memcpy(ptr+=sint,data,sdata);
+    buffer[packetlen + 1] = '\n';
+    if(send(socket, buffer, packetlen + 2, 0))
         return 0;
     return 1;
 }
@@ -64,46 +67,48 @@ int CRP::receivePacket(SOCKET &socket)
     size_t suint=sizeof(unsigned int),
            sint=sizeof(int),
            sdata=MAXBUFFERSIZE+1;
-    char *temp=new char[1];
-    temp[0]='\n';
+    size_t slen = sizeof(unsigned long long);
+    char* buffer = NULL;
 
-    while(sdata>MAXBUFFERSIZE)
+    char preview[MAXBUFFERSIZE + 100]={0};
+    int ret = recv(socket,preview,MAXBUFFERSIZE + 100,MSG_PEEK); //预读
+
+    while (ret!=0 && ret!=SOCKET_ERROR)
     {
-        char prebuffer[MAXBUFFERSIZE]={0};
-        recv(socket,prebuffer,MAXBUFFERSIZE,MSG_PEEK); //预读
-        sdata=readline(prebuffer)+1;
-        
-        int size = sdata;
-        char *buffer=new char[size+1];
-        recv(socket,buffer,size,0);
-        buffer[size]='\n';
-        char *p=temp;
-        size_t sizep=readline(p);
-        temp=new char[sizep+size+1];
-        for(int i=0;i<sizep;i++)
+        if (preview[0] == '\n')
         {
-            temp[i]=p[i];
+            char* p = preview + 1;
+            unsigned long long packetlen = 0;
+            memcpy(&packetlen, p, slen);
+            if (preview[packetlen + 1] == '\n')
+            {
+                buffer = new char[packetlen + 2];
+                ret = recv(socket, buffer, packetlen + 2, 0);
+
+                datalen = packetlen - slen - suint * 2 - sint;
+                data = new char[datalen];
+                p = buffer + 1 + slen;
+                memcpy(&id, p, suint);
+                memcpy(&psw, p += suint, suint);
+                memcpy(&type, p += suint, sint);
+                memcpy(data, p += sint, datalen);
+
+                if (buffer) delete [] buffer;
+                return 0;
+            }
+            else
+            {
+                char x[1];
+                recv(socket, x, 1, 0);
+                ret = recv(socket, preview, MAXBUFFERSIZE + 100, MSG_PEEK);
+            }
         }
-        for(int i=sizep;i<sizep+size+1;i++)
+        else
         {
-            temp[i]=buffer[i-sizep];
+            char x[1];
+            recv(socket, x, 1, 0);
+            ret = recv(socket, preview, MAXBUFFERSIZE + 100, MSG_PEEK);
         }
-        delete [] p;
-        delete [] buffer;
     }
-    char *ptr=temp;
-    memcpy(&id,ptr,suint);
-    ptr+=suint;
-    memcpy(&psw,ptr,suint);
-    ptr+=suint;
-    memcpy(&type,ptr,sint);
-    ptr+=sint;
-
-    sdata=readline(temp)-suint*2-sint;
-    data=new char[sdata];
-    memcpy(data,ptr,sdata);
-
-    datalen = sdata;
-
-    return 0;
+    return 1;
 }
