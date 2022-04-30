@@ -4,9 +4,18 @@
 CRP::CRP(Account *acc,int type,char* data) :
     id(acc->id),psw(acc->password),type(type),datalen(0)
 {
-    this->datalen=strlen(data) + 1;
-    this->data=new char[this->datalen];
-    strcpy(this->data,data);
+    if (data)
+    {
+        this->datalen = strlen(data) + 1;
+        this->data = new char[this->datalen];
+        strcpy(this->data, data);
+    }
+    else
+    {
+        this->data = new char[1];
+        this->datalen = 1;
+        this->data[0] = '\0';
+    }
 }
 
 CRP::CRP(Account* acc, int type, char* data, unsigned long long datalen) :
@@ -23,7 +32,7 @@ CRP::~CRP()
 
 Account CRP::registerAccount(unsigned int id)
 {
-    return Account(id,this->psw);
+    return Account(id,this->psw,this->data);
 }
 
 int CRP::sendPacket(SOCKET &socket)
@@ -43,8 +52,11 @@ int CRP::sendPacket(SOCKET &socket)
     memcpy(ptr += suint,&type,sint);
     memcpy(ptr+=sint,data,sdata);
     buffer[packetlen + 1] = '\n';
-    if(send(socket, buffer, packetlen + 2, 0))
+    if (send(socket, buffer, packetlen + 2, 0))
+    {
+        if (buffer) delete[] buffer;
         return 0;
+    }
     return 1;
 }
 

@@ -84,11 +84,6 @@ int mp::sendFile(SOCKET& socket, string filename, Account* acc)
             infile.close();
             return 0;
         }
-        /*if (count < MAXCONTENTSIZE)
-        {
-            buffer[sizeof(int) + count] = '\n';
-        }
-        buffer[MAXBUFFERSIZE - 1] = '\n';*/
         CRP packet(acc, 6, buffer, sizeof(int) + count);
         if (packet.sendPacket(socket) != 0)
             return 2;
@@ -159,14 +154,15 @@ unsigned int mp::registerReq(SOCKET &socket,string nickname,unsigned int psw)
     CRP packet(&acc,0,cstr);
     packet.sendPacket(socket);
 
-    delete [] cstr;
+    if (cstr) delete[] cstr;
 
     CRP packet_rpy;
     packet_rpy.receivePacket(socket);
     if(packet.type==0)
     {
-        return packet.id;
+        return packet_rpy.id;
     }
+    return 0;
 }
 
 Account mp::registerRpy(SOCKET &socket,unsigned int id)
@@ -175,7 +171,6 @@ Account mp::registerRpy(SOCKET &socket,unsigned int id)
     packet.receivePacket(socket);
 
     Account acc=packet.registerAccount(id);
-    acc.setNickname(packet.data);
 
     CRP packet_rpy(&acc,0);
     packet_rpy.sendPacket(socket);

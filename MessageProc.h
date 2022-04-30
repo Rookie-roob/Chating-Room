@@ -27,7 +27,7 @@ int sendFile(SOCKET &socket,string filename,Account *acc); //client or server
 int saveFile(SOCKET &socket); //client or server
 
 int signInReq(SOCKET &socket,Account &acc); //client
-int signInRpy(SOCKET &socket,AccountReg &accounts); //server
+int signInRpy(SOCKET &socket,AccountTable &accountable); //server
 
 int signOutReq(); //client
 int signOutRpy(); //server

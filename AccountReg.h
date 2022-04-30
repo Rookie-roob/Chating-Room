@@ -21,16 +21,26 @@ public:
     AccountReg(Account account) : account(account){}
 };
 
-Account* getAccountInfoByID(unsigned int id);
+class AccountTable {
+public:
+    vector<AccountReg> accounts;
+    int accountnum;
 
-void showFriendState(Account *acc);
+    Account* getAccountInfoByID(unsigned int id);
 
-int initial();
+    int findAccount(unsigned int id); //find account by id and check the password meanwhile,if found return the index,else return -1
 
-int newAccount(unsigned int id,unsigned int psw,char* nickname);
+    void recordIPAddress(int index); //record the ip address of client: accounts[index]
 
-int newFriend(unsigned int myid,unsigned int friendid);
+    void showFriendState(Account* acc);
 
-void showAllAccount();
+    int initial();
+
+    int newAccount(unsigned int id, unsigned int psw, char* nickname);
+
+    int newFriend(unsigned int myid, unsigned int friendid);
+
+    void showAllAccount();
+};
 
 #endif
