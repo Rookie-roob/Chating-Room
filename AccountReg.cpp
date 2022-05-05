@@ -3,13 +3,23 @@
 
 int AccountTable::findAccount(unsigned int id)
 {
-
-    return true;
+    int i = 0;
+    for (i = 0;i < accountnum;i++)
+    {
+        if (accounts[i].account.getID() == id)
+            break;
+    }
+    if (i < accountnum)
+        return i;
+    else
+        return -1;
 }
 
-void AccountTable::recordIPAddress(int index)
+void AccountTable::recordIPAddress(int index,SOCKET &socket)
 {
-
+    accounts[index].ipaddr=new sockaddr;
+    int addrsize = sizeof(sockaddr);
+    getpeername(socket, accounts[index].ipaddr, &addrsize);
 }
 
 Account* AccountTable::getAccountInfoByID(unsigned int id)
@@ -82,8 +92,9 @@ int AccountTable::newAccount(unsigned int id, unsigned int psw, char* nickname)
     fstream file("datafile.data", fstream::binary | fstream::out | fstream::in);
     if (!file)
     {
-        cout << "fail to open datafile.data" << endl;
-        return 1;
+        ofstream out("datafile.data", ofstream::binary | ofstream::out);
+        out.close();
+        file.open("datafile.data", fstream::binary | fstream::out | fstream::in);
     }
 
     char buffer[BlockSize] = { 0 };
@@ -137,10 +148,11 @@ int AccountTable::newFriend(unsigned int myid, unsigned int friendid)
         file.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
         if (id == myid)
         {
-            file.seekg(sizeof(unsigned int) * 2, ios::cur);
-            int friendnum = 0;
-            file.read(reinterpret_cast<char*>(&friendnum), sizeof(unsigned int));
-            file.seekp(sizeof(unsigned int) * friendnum, ios::cur);
+            file.seekg(sizeof(unsigned int) + 20, ios::cur);
+            int friendnum = acc->getFriendnum();
+
+            file.write(reinterpret_cast<char*>(&friendnum), sizeof(unsigned int));
+            file.seekp(sizeof(unsigned int) * (friendnum - 1), ios::cur);
             file.write(reinterpret_cast<char*>(&friendid), sizeof(unsigned int));
             file.close();
             return 0;

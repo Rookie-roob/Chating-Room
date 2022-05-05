@@ -13,13 +13,12 @@ const size_t MAXBUFFERSIZE=1024;
 
 class CRP //chating room packet
 {    
-private:
-    unsigned int psw;
 public:
     //0 register new account; 1 log in; 2 log out; 3 show friend list; 4 connect with friend
     //5 message; 6 file transport
     int type; //packet type
     unsigned int id;
+    unsigned int psw;
     char* data; 
     unsigned long long datalen; // \n is not included
     CRP()=default;
@@ -31,7 +30,5 @@ public:
     int sendPacket(SOCKET &socket);
     int receivePacket(SOCKET &socket);
 };
-
-int readline(char buffer[MAXBUFFERSIZE]);
 
 #endif

@@ -40,16 +40,17 @@ DWORD WINAPI receiveMessage(LPVOID lpvThreadParam)
 
 int main()
 {
-    initial();
-    // newAccount(1,123456,"Ming");
-    // newAccount(2,123456,"jackeylove");
-    // newAccount(3,123456,"Xiaohu");
-    // newFriend(1,3);
-    // newFriend(1,2);
+    AccountTable accountable;
+    accountable.initial();
+    /*accountable.newAccount(1,123456,"Ming");
+    accountable.newAccount(2,123456,"jackeylove");
+    accountable.newAccount(3,123456,"Xiaohu");
+    accountable.newFriend(1, 3);
+    accountable.newFriend(1,2);*/
     // Account *acc=getAccountInfoByID(1);
     // getAccountInfoByID(2)->changeState();
     // showFriendState(acc);
-    showAllAccount();
+    /*showAllAccount();*/
 
 	WSADATA wsaData;
     int s = WSAStartup(MAKEWORD(2, 0), &wsaData);
@@ -78,14 +79,23 @@ int main()
 	
     Account acc(1,123456);
     /*HANDLE handle = CreateThread(NULL, 0, receiveMessage, NULL, 0, NULL);*/
-    while(1)
+    /*while(1)
     {
-        /* char send_str[100];
-         cin.getline(send_str,100);
-         sendMessage(send_str,strlen(send_str));*/
+        string str;
+        getline(cin, str);
+        cout << str << endl;
+        mp::sendMessage(client, &acc, str);
 
-        mp::saveFile(client);
+        
     }
+    mp::saveFile(client);*/
+
+    /*mp::registerRpy(client, accountable);
+    Account* acc1 = &accountable.accounts[accountable.accountnum - 1].account;
+    cout << acc1->getID() << acc1->getNickname() << endl;*/
+    mp::signInRpy(client, accountable);
+    accountable.accounts[2].account.changeState();
+    mp::getFriendsStateRpy(client, accountable);
 
     /*CloseHandle(handle);*/
     closesocket(client);

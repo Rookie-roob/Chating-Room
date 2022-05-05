@@ -15,10 +15,10 @@ const size_t BlockSize=sizeof(unsigned int)*2+sizeof(char [20])+sizeof(unsigned 
 class AccountReg{
 public:
     Account account;
-    sockaddr ipaddr;
+    sockaddr *ipaddr;
     int port;
 
-    AccountReg(Account account) : account(account){}
+    AccountReg(Account account) : account(account),ipaddr(NULL),port(0) {}
 };
 
 class AccountTable {
@@ -26,13 +26,15 @@ public:
     vector<AccountReg> accounts;
     int accountnum;
 
+    AccountTable() : accountnum(0) {}
+
     Account* getAccountInfoByID(unsigned int id);
 
     int findAccount(unsigned int id); //find account by id and check the password meanwhile,if found return the index,else return -1
 
-    void recordIPAddress(int index); //record the ip address of client: accounts[index]
+    void recordIPAddress(int index,SOCKET &socket); //record the ip address of client: accounts[index]
 
-    void showFriendState(Account* acc);
+    void showFriendState(Account* acc); 
 
     int initial();
 

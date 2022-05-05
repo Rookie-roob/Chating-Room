@@ -29,18 +29,18 @@ int saveFile(SOCKET &socket); //client or server
 int signInReq(SOCKET &socket,Account &acc); //client
 int signInRpy(SOCKET &socket,AccountTable &accountable); //server
 
-int signOutReq(); //client
-int signOutRpy(); //server
+int signOutReq(SOCKET &socket,Account &acc); //client
+int signOutRpy(SOCKET& socket, AccountTable& accountable); //server
 
 unsigned int registerReq(SOCKET &socket,string nickname,unsigned int psw); //client
-Account registerRpy(SOCKET &socket,unsigned int id); //server
+int registerRpy(SOCKET &socket, AccountTable& accountable); //server
 
-int communicateFriendReq(thread *threads); //client
-int communicateFriendRpy(); 
+int communicateFriendReq(thread *threads, SOCKET &socket, Account &acc); //client
+int communicateFriendRpy(SOCKET& socket, AccountTable& accountable);
 //server (send to both of the two client hosts which want to connect with each other)
 
-int getFriendsStateReq(); //client
-int getFriendsStateRpy(); //server
+int getFriendsStateReq(SOCKET& socket, Account& acc); //client
+int getFriendsStateRpy(SOCKET& socket, AccountTable& accountable); //server
 
 int clientReqHandler(thread *threads); //server £¨new thread to handle client requests£©
 

@@ -160,22 +160,23 @@ unsigned int mp::registerReq(SOCKET &socket,string nickname,unsigned int psw)
     packet_rpy.receivePacket(socket);
     if(packet.type==0)
     {
+        cout << "register successfully" << endl;
         return packet_rpy.id;
     }
     return 0;
 }
 
-Account mp::registerRpy(SOCKET &socket,unsigned int id)
+int mp::registerRpy(SOCKET &socket,AccountTable &accountable)
 {
     CRP packet;
     packet.receivePacket(socket);
 
-    Account acc=packet.registerAccount(id);
+    accountable.newAccount(accountable.accountnum + 1, packet.psw, packet.data);
 
-    CRP packet_rpy(&acc,0);
+    CRP packet_rpy(&accountable.accounts[accountable.accountnum-1].account,0);
     packet_rpy.sendPacket(socket);
 
-    return acc;
+    return 0;
 }
 
 int mp::signInReq(SOCKET &socket,Account &acc)
@@ -190,6 +191,31 @@ int mp::signInReq(SOCKET &socket,Account &acc)
         if(packet_rpy.data && packet_rpy.data[0]=='t')
         {
             cout<<"sign in successfully"<<endl;
+
+            size_t suint = sizeof(unsigned int);
+            char* p = packet_rpy.data + 1;
+            unsigned int friendnum;
+
+            char name[20] = { 0 };
+            memcpy(name, p, 20);
+            memcpy(&friendnum, p += 20, suint);
+            acc.setNickname(name);
+            p += suint;
+
+            for (int i = 0;i < friendnum;i++)
+            {
+                unsigned int friendid;
+                char name[20] = { 0 }; 
+                bool state = false; 
+                memcpy(&friendid, p, suint);
+                memcpy(name, p += suint, 20);
+                p += 20;
+                if (p[0] == 'y')
+                    state = true;
+
+                acc.friendinfoList.push_back(friendinfo(friendid,name,state));
+                p++;
+            }
             return 0;
         }
         else if(packet_rpy.data && packet_rpy.data[0]=='f')
@@ -200,7 +226,204 @@ int mp::signInReq(SOCKET &socket,Account &acc)
     }
 }
 
-int mp::signInRpy(SOCKET &socket,AccountReg &accounts)
+int mp::signInRpy(SOCKET &socket,AccountTable &accountable)
+{
+    CRP packet;
+    packet.receivePacket(socket);
+    int index = accountable.findAccount(packet.id);
+    if (index < 0)
+    {
+        Account acc(packet.id, packet.psw);
+        char data[2];
+        data[0] = 'f';data[1] = '\0';
+        CRP packet_rpy(&acc,1,data);
+        packet_rpy.sendPacket(socket);
+        return 0;
+    }
+    else
+    {
+        if (accountable.accounts[index].account.checkPassword(packet.psw))
+        {
+            Account *account = &accountable.accounts[index].account;
+            account->changeState(); //sign in successfully,change state: online
+            int addrsize = sizeof(sockaddr_in);
+            accountable.recordIPAddress(index, socket); //record ip address
+
+            unsigned int friendnum = account->getFriendnum();
+            //t or f;nickname;friendnum;friendlist:friend id,friend name,state;
+            int datalen = 1 + 20 + sizeof(unsigned int) + friendnum * (sizeof(unsigned int) + 20 + 1);
+            char* data = new char[datalen];
+            memset(data, 0, datalen);
+            char* p = data + 1;
+            data[0] = 't';
+            memcpy(p, account->getNickname(), 20);
+            memcpy(p += 20, &friendnum, sizeof(unsigned int));
+            p += sizeof(unsigned int);
+
+            for (int i = 0;i < friendnum;i++)
+            {
+                unsigned int friendid = account->friendList[i];
+                Account* friendacc = accountable.getAccountInfoByID(friendid);
+                char* name = friendacc->getNickname();
+                char state;
+                if (friendacc->showState())
+                    state = 'y';
+                else
+                    state = 'n';
+                memcpy(p, &friendid, sizeof(unsigned int));
+                memcpy(p += sizeof(unsigned int), name, 20);
+                memcpy(p += 20, &state, 1);
+                p++;
+            }
+
+            CRP packet_rpy(account, 1, data, datalen);
+            packet_rpy.sendPacket(socket);
+            return 0;
+        }
+        else
+        {
+            Account acc(packet.id, packet.psw);
+            char data[2];
+            data[0] = 'f';data[1] = '\0';
+            CRP packet_rpy(&acc, 1, data);
+            packet_rpy.sendPacket(socket);
+            return 0;
+        }
+    }
+    return 0;
+}
+
+int mp::signOutReq(SOCKET& socket, Account& acc)
+{
+    CRP packet(&acc, 2);
+    packet.sendPacket(socket);
+
+    CRP packet_rpy;
+    packet_rpy.receivePacket(socket);
+    if (packet_rpy.data[0] == 't')
+    {
+        cout << "sign out successfully" << endl;
+        return 0;
+    }
+    else
+    {
+        cout << "sign out error" << endl;
+        return 0;
+    }
+    return 0;
+}
+
+int mp::signOutRpy(SOCKET& socket, AccountTable& accountable)
+{
+    CRP packet;
+    packet.receivePacket(socket);
+    int index = accountable.findAccount(packet.id);
+    if (index < 0)
+    {
+        Account acc(packet.id, packet.psw);
+        char data[2];
+        data[0] = 'f';data[1] = '\0';
+        CRP packet_rpy(&acc, 2, data);
+        packet_rpy.sendPacket(socket);
+        return 0;
+    }
+    else
+    {
+        accountable.accounts[index].account.changeState(); //sign out successfully,change state: offline
+        if (accountable.accounts[index].ipaddr)
+            delete accountable.accounts[index].ipaddr;
+
+        Account acc(packet.id, packet.psw);
+        char data[2];
+        data[0] = 't';data[1] = '\0';
+        CRP packet_rpy(&acc, 2, data);
+        packet_rpy.sendPacket(socket);
+        return 0;
+    }
+    return 0;
+}
+
+int mp::getFriendsStateReq(SOCKET& socket, Account& acc)
+{
+    CRP packet(&acc, 3);
+    packet.sendPacket(socket);
+
+    CRP packet_rpy;
+    packet_rpy.receivePacket(socket);
+    if (packet_rpy.data[0] != 'f')
+    {
+        size_t suint = sizeof(unsigned int);
+        char* p = packet_rpy.data;
+        unsigned int friendnum;
+        memcpy(&friendnum, p, suint);
+        p += suint;
+
+        for (int i = 0;i < friendnum;i++)
+        {
+            bool state = false;
+            if (p[0] == 'y')
+                state = true;
+
+            acc.friendinfoList[i].state = state;
+            p++;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+int mp::getFriendsStateRpy(SOCKET& socket, AccountTable& accountable)
+{
+    CRP packet;
+    packet.receivePacket(socket);
+    int index = accountable.findAccount(packet.id);
+    if (index < 0)
+    {
+        Account acc(packet.id, packet.psw);
+        char data[2];
+        data[0] = 'f';data[1] = '\0';
+        CRP packet_rpy(&acc, 3, data);
+        packet_rpy.sendPacket(socket);
+        return 0;
+    }
+    else
+    {
+        Account *account = &accountable.accounts[index].account;
+        int friendnum = account->getFriendnum();
+        //friendnum;friendinfolist:state
+        int datalen = sizeof(unsigned int) + friendnum;
+        char* data = new char[datalen];
+        char* p = data;
+        memcpy(p, &friendnum, sizeof(unsigned int));
+        p += sizeof(unsigned int);
+
+        for (int i = 0;i < friendnum;i++)
+        {
+            unsigned int friendid = account->friendList[i];
+            Account *friendacc = accountable.getAccountInfoByID(friendid);
+            char state;
+            if (friendacc->showState())
+                state = 'y';
+            else
+                state = 'n';
+            memcpy(p, &state, 1);
+            p++;
+        }
+
+        CRP packet_rpy(account, 3, data, datalen);
+        packet_rpy.sendPacket(socket);
+
+        return 0;
+    }
+    return 0;
+}
+
+int mp::communicateFriendReq(thread* threads, SOCKET& socket, Account& acc)
+{
+    return 0;
+}
+
+int mp::communicateFriendRpy(SOCKET& socket, AccountTable& accountable)
 {
     return 0;
 }

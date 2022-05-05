@@ -60,20 +60,6 @@ int CRP::sendPacket(SOCKET &socket)
     return 1;
 }
 
-//return the position of possible \n
-int readline(char buffer[MAXBUFFERSIZE])
-{
-    int i;
-    for (i = 0;i < MAXBUFFERSIZE;i++)
-    {
-        if (buffer[i] == '\n')
-            break;
-    }
-    if (buffer[i] == '\n')
-        return i;
-    else
-        return MAXBUFFERSIZE;
-}
 int CRP::receivePacket(SOCKET &socket)
 {
     size_t suint=sizeof(unsigned int),
